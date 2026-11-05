@@ -13,6 +13,7 @@ log = { version = "*", features = [
 	"max_level_debug",
 	"release_max_level_warn",
 ] }
+notify-debouncer-full = "0.7.0"
 ron = "0.12.3"
 serde = { version = "1.0.229", features = ["derive"] }
 

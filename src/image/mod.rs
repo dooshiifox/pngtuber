@@ -15,7 +15,7 @@ impl Plugin for FacePlugin {
     }
 }
 
-#[derive(Resource, Reflect)]
+#[derive(Resource, Reflect, PartialEq, Clone, Debug)]
 #[reflect(Resource)]
 pub struct Faces {
     pub faces: HashMap<String, FaceEntry<Handle<Image>>>,
