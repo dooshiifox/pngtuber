@@ -4,12 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.20.1" }
+anyhow = "1.0.104"
+bevy = { version = "0.20.1", features = ["bevy_settings", "jpeg", "gif", "ico", "png", "qoi", "webp", "bmp", "hdr"] }
+bevy_dylib = { version = "0.20.1" }
+cpal = { version = "0.18.2", features = [ "pipewire" ] }
 # https://bevy.org/learn/quick-start/getting-started/setup/#improve-runtime-performance-optional
 log = { version = "*", features = [
 	"max_level_debug",
 	"release_max_level_warn",
 ] }
+ron = "0.12.3"
+serde = { version = "1.0.229", features = ["derive"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

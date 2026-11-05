@@ -23,7 +23,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         rust-toolchain = fenix.packages.${system}.fromToolchainFile {
           file = ./rust-toolchain.toml;
-          sha256 = "sha256-2wqUa1sFNg8sdadO5YXcUSwpoBek+e+viCiSqnpUbdM=";
+          sha256 = "sha256-ZBbs8/vrgUCyEPZ+2MU1MQEIDLVI05q8t1JRuFFQytw=";
         };
       in
       {
@@ -43,10 +43,13 @@
             libxkbcommon
             wayland
             kontroll
+            pipewire
+            clang
           ];
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           RUSTFLAGS = "-Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold -Zshare-generics=y";
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }
     );
