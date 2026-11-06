@@ -28,7 +28,8 @@ impl FacesSettingsPlugin {
                         "default".into(),
                         FaceEntry {
                             activate: "SM-h".into(),
-                            talk_bounce_amount: 50.,
+                            talk_bounce_amount: crate::image::config::default_talk_bounce_amount(),
+                            stop_talking_delay: crate::image::config::default_stop_talking_delay(),
                             idle_sprite: Face {
                                 image: asset_loader.load("test.png"),
                                 ..default()

@@ -58,14 +58,14 @@ fn spawn_volume_bar(
 
 fn update_volume_bar(speech: Volume, mut volume: Query<(&mut Transform,), With<VolumeBar>>) {
     for (mut transform,) in volume.iter_mut() {
-        let vol = speech.amplified();
-        transform.scale = Vec3::new(vol.remap(0., 1., 0.01, 1.), 1., 1.)
+        let vol = speech.unclamped_dbfs();
+        transform.scale = Vec3::new(vol.remap(-60., 0., 0.01, 1.), 1., 1.)
     }
 }
 
 fn update_volume_text(speech: Volume, mut query: Query<&mut Text, With<VolumeText>>) {
     for mut span in query.iter_mut() {
-        let vol = speech.amplified();
-        **span = format!("{:.2}%", vol * 100.);
+        let vol = speech.unclamped_dbfs();
+        **span = format!("{:.1} dB", vol);
     }
 }

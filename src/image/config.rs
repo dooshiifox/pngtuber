@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,18 +10,46 @@ pub struct FaceEntry<ImageType: Default> {
     pub activate: KeyComboList,
     #[serde(default = "default_talk_bounce_amount")]
     pub talk_bounce_amount: f32,
+    #[serde(
+        default = "default_stop_talking_delay",
+        with = "stop_talking_delay_serde"
+    )]
+    pub stop_talking_delay: Duration,
     pub idle_sprite: Face<ImageType>,
     #[serde(default)]
     pub talk_sprite: Option<Face<ImageType>>,
 }
-const fn default_talk_bounce_amount() -> f32 {
+pub const fn default_talk_bounce_amount() -> f32 {
     50.
 }
+pub const fn default_stop_talking_delay() -> Duration {
+    Duration::from_millis(250)
+}
+mod stop_talking_delay_serde {
+    use serde::Deserialize;
+    use std::time::Duration;
+
+    pub(super) fn serialize<S>(dur: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_f32(dur.as_secs_f32())
+    }
+
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        f32::deserialize(deserializer).map(Duration::from_secs_f32)
+    }
+}
+
 impl FaceEntry<Handle<Image>> {
     pub fn to_settings(&self) -> FaceEntry<String> {
         FaceEntry {
             activate: self.activate.clone(),
             talk_bounce_amount: self.talk_bounce_amount,
+            stop_talking_delay: self.stop_talking_delay,
             idle_sprite: self.idle_sprite.to_settings(),
             talk_sprite: self.talk_sprite.as_ref().map(Face::to_settings),
         }
@@ -30,6 +60,7 @@ impl FaceEntry<String> {
         FaceEntry {
             activate: self.activate.clone(),
             talk_bounce_amount: self.talk_bounce_amount,
+            stop_talking_delay: self.stop_talking_delay,
             idle_sprite: self.idle_sprite.to_app(asset_server),
             talk_sprite: self
                 .talk_sprite

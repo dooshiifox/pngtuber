@@ -10,8 +10,17 @@ use crate::{
 pub struct FacePlugin;
 impl Plugin for FacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, insert_faces)
-            .add_systems(Update, (keyboard, update_image).chain());
+        app.insert_resource(StopTalkingDelayTimer::default())
+            .add_systems(Startup, insert_faces)
+            .add_systems(
+                Update,
+                (
+                    update_active_image,
+                    StopTalkingDelayTimer::tick,
+                    update_image,
+                )
+                    .chain(),
+            );
     }
 }
 
@@ -36,10 +45,29 @@ impl Faces {
 #[derive(Component)]
 pub struct FaceSprite;
 
+#[derive(Resource, Default)]
+pub struct StopTalkingDelayTimer(Timer);
+impl StopTalkingDelayTimer {
+    fn tick(
+        mut timer: ResMut<StopTalkingDelayTimer>,
+        time: Res<Time>,
+        volume: Volume,
+        faces: Res<Faces>,
+    ) {
+        timer.0.set_duration(faces.active().stop_talking_delay);
+        if volume.volume() > 0. {
+            timer.0.reset();
+        } else {
+            timer.0.tick(time.delta());
+        }
+    }
+}
+
 #[derive(bevy::ecs::system::SystemParam)]
 pub struct CurrentFace<'w> {
     faces: Res<'w, Faces>,
     volume: Volume<'w>,
+    stop_talking_delay_timer: Res<'w, StopTalkingDelayTimer>,
 }
 impl<'w> CurrentFace<'w> {
     pub fn volume(&self) -> f32 {
@@ -48,11 +76,14 @@ impl<'w> CurrentFace<'w> {
     pub fn face_entry(&self) -> &FaceEntry<Handle<Image>> {
         self.faces.active()
     }
+    pub fn is_talking(&self) -> bool {
+        let volume = self.volume();
+        volume > 0. || !self.stop_talking_delay_timer.0.is_finished()
+    }
 
     pub fn face(&self) -> &Face<Handle<Image>> {
         let active = self.face_entry();
-        let volume = self.volume();
-        if volume > 0. {
+        if self.is_talking() {
             active.talk_sprite.as_ref().unwrap_or(&active.idle_sprite)
         } else {
             &active.idle_sprite
@@ -64,16 +95,16 @@ fn insert_faces(mut commands: Commands) {
     commands.spawn((Sprite::default(), FaceSprite));
 }
 
-fn keyboard(keyboard: Res<ButtonInput<KeyCode>>, mut faces: ResMut<Faces>) {
+fn update_active_image(keyboard: Res<ButtonInput<KeyCode>>, mut faces: ResMut<Faces>) {
     // info!("{:?}", keyboard.get_pressed().collect::<Vec<&KeyCode>>());
     let mut new = None;
     for (name, about) in &faces.faces {
         if about.activate.is_pressed(&keyboard) {
-            new = Some(name.clone());
+            new = Some(name);
         }
     }
 
-    if let Some(new) = new {
+    if let Some(new) = new.cloned() {
         faces.set_current(new);
     }
 }

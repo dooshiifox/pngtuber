@@ -7,6 +7,7 @@ use std::{
 };
 
 use bevy::{
+    math::ops::log10,
     prelude::*,
     settings::{ReflectSettingsGroup, SettingsGroup},
 };
@@ -21,21 +22,26 @@ pub struct Volume<'w> {
     settings: Res<'w, VolumeSettings>,
 }
 impl<'w> Volume<'w> {
-    pub fn amplified(&self) -> f32 {
+    pub fn unclamped_dbfs(&self) -> f32 {
         let raw_vol = self.input.raw_volume();
-        raw_vol.powf(self.settings.amplifier.recip())
+        20. * log10(raw_vol)
     }
 
-    pub fn volume(&self) -> f32 {
-        let vol = self.amplified();
-        let ramp_start = self.settings.threshold_min;
-        let ramp_end = self.settings.threshold_min + self.settings.threshold_ramp;
-        if vol < self.settings.threshold_min {
-            0.
-        } else if vol < ramp_end {
-            vol.remap(ramp_start, ramp_end, 0., ramp_end)
+    pub fn dbfs(&self) -> Option<f32> {
+        let dbfs = self.unclamped_dbfs();
+
+        if dbfs < self.settings.threshold {
+            None
         } else {
-            vol
+            Some(dbfs)
+        }
+    }
+
+    /// Returns the volume between 0..=1 by going through dBFS scaling.
+    pub fn volume(&self) -> f32 {
+        match self.dbfs() {
+            Some(dbfs) => dbfs.remap(self.settings.threshold, 0., 0., 1.),
+            None => 0.,
         }
     }
 }
@@ -44,17 +50,11 @@ impl<'w> Volume<'w> {
 #[reflect(Resource, SettingsGroup, Default)]
 #[settings_group(file = "volume")]
 pub struct VolumeSettings {
-    amplifier: f32,
-    threshold_min: f32,
-    threshold_ramp: f32,
+    threshold: f32,
 }
 impl Default for VolumeSettings {
     fn default() -> Self {
-        Self {
-            amplifier: 4.,
-            threshold_min: 0.27,
-            threshold_ramp: 0.04,
-        }
+        Self { threshold: -32. }
     }
 }
 
