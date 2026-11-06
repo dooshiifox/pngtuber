@@ -21,7 +21,7 @@ fn add_image_background(
 ) {
     let images_without_child = images
         .iter()
-        .filter(|entity| backgrounds.related(*entity).is_none());
+        .filter(|entity| backgrounds.iter().all(|x| x.0 != *entity));
     for childless in images_without_child {
         commands.entity(childless).with_child((
             FaceDebugBackground,
